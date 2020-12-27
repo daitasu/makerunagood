@@ -1,10 +1,15 @@
 import * as Phaser from "phaser";
 
+type Platforms = Phaser.Physics.Arcade.StaticGroup;
+type DynamicGroup = Phaser.Physics.Arcade.Group;
+type DynamicBody = Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+type Player = DynamicBody;
+
 export class Game extends Phaser.Scene {
-  private platforms;
-  private player;
-  private stars;
-  private bombs;
+  private platforms: Platforms;
+  private player: Player;
+  private stars: DynamicGroup;
+  private bombs: DynamicGroup;
   private cursors;
   private score;
   private gameOver;
@@ -141,21 +146,21 @@ export class Game extends Phaser.Scene {
     }
   }
 
-  createStar(stars: Phaser.Physics.Arcade.Group): void {
+  createStar(stars: DynamicGroup): void {
     // 右端か左端から登場させる
     const leftOrRight = Phaser.Math.Between(0, 1)
       ? 0
       : Number(this.game.config.width);
-    const star = stars.create(leftOrRight, 0, "star");
+    const star: DynamicBody = stars.create(leftOrRight, 0, "star");
 
     // 星のそれぞれにランダムなバランス値を与える
     star.setCollideWorldBounds(true);
-    star.setBounce(1);
+    star.setBounce(1, 1);
     star.setVelocity(Phaser.Math.Between(-200, 200), 20);
   }
 
   // 星を取得すると、星が消え得点が入る
-  collectStar(player, star) {
+  collectStar(player: Player, star: DynamicBody) {
     star.disableBody(true, true);
 
     this.score += 10;
@@ -174,7 +179,7 @@ export class Game extends Phaser.Scene {
   }
 
   // 爆弾に当たるとキャラクターが光り、ゲームオーバーとなる
-  hitBomb(player, bomb) {
+  hitBomb(player: Player) {
     this.physics.pause();
 
     player.setTint(0xff0000);
