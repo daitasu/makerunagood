@@ -1,19 +1,3 @@
-<!doctype html> 
-<html lang="en"> 
-<head> 
-    <meta charset="UTF-8" />
-    <title>Making your first Phaser 3 Game - Part 1</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
-    <style type="text/css">
-        body {
-            margin: 0;
-        }
-    </style>
-</head>
-<body>
-
-<script type="text/javascript">
-
     const config = {
         type: Phaser.AUTO, // Phaser.CANVAS、Phaser.WEBGL、Phaser.AUTO
         width: 800,
@@ -40,8 +24,11 @@
     let bombs;
     let cursors;
     let score = 0;
+    let timeCounter = 0;
     let gameOver = false;
     let scoreText;
+    let timerEvent;
+    const starsList = [];
 
     // アセットの取得
     function preload ()
@@ -119,16 +106,17 @@
         // キーボードマネージャーを利用するための宣言
         cursors = this.input.keyboard.createCursorKeys();
 
-        // 星の設置
-        stars = this.physics.add.group({
-            key: 'star',
-            repeat: 11,
-            setXY: { x: 12, y: 0, stepX: 70 }
-        });
+        /*
+        * function create(x, y, frame, visible, active)
+        */
 
-        stars.children.iterate(function (child) {
-            // 星のそれぞれにランダムなバランス値を与える
-            child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+        // 星の設置
+        stars = this.physics.add.group();
+        timerEvent = this.time.addEvent({
+            delay: 5000,
+            timeScale: 1.0,
+            repeat: 3,
+            callback: createStar
         });
 
         /*
@@ -156,6 +144,9 @@
 
     function update ()
     {
+        // console.log(Phaser.Math.Between(0,1));
+
+        // console.log(timerEvent.getElapsedSeconds());
         if (cursors.left.isDown)
         {
             player.setVelocityX(-160);
@@ -181,6 +172,16 @@
         }
     }
 
+    function createStar () {
+        // 右端か左端から登場させる
+        const leftOrRight = Phaser.Math.Between(0,1) ? 0 : game.config.width;
+        const star = stars.create(leftOrRight, 0, 'star');
+        // 星のそれぞれにランダムなバランス値を与える
+        star.setCollideWorldBounds(true);
+        star.setBounce(1);
+        star.setVelocity(Phaser.Math.Between(-200, 200), 20);
+    }
+
     // 星を取得すると、星が消え得点が入る
     function collectStar (player, star)
     {
@@ -189,7 +190,7 @@
         score += 10;
         scoreText.setText('Score: ' + score);
 
-        if (stars.countActive(true) === 0)
+        if (stars.countActive(true) === 9)
         {
             // 再度星を生成する
             stars.children.iterate(function (child) {
@@ -217,10 +218,3 @@
 
         gameOver = true;
     }
-
-    // 物理エンジンに対して　this.physics.addのようにオブジェクトを追加していく
-</script>
-
-</body>
-</html>
-
