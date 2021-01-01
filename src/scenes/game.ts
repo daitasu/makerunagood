@@ -4,20 +4,24 @@ type Platforms = Phaser.Physics.Arcade.StaticGroup;
 type DynamicGroup = Phaser.Physics.Arcade.Group;
 type DynamicBody = Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
 type Player = DynamicBody;
+type Keyboard = Phaser.Types.Input.Keyboard.CursorKeys;
+type Text = Phaser.GameObjects.Text;
 
 export class Game extends Phaser.Scene {
   private platforms: Platforms;
   private player: Player;
   private stars: DynamicGroup;
   private bombs: DynamicGroup;
-  private cursors;
-  private score;
-  private gameOver;
-  private scoreText;
+  private cursors: Keyboard;
+  private score: number;
+  private gameOver: boolean;
+  private scoreText: Text;
+  private starList: DynamicBody[];
 
   init(): void {
     this.score = 0;
     this.gameOver = false;
+    this.starList = [];
   }
 
   preload(): void {
@@ -84,11 +88,15 @@ export class Game extends Phaser.Scene {
     // 星の設置
     this.stars = this.physics.add.group();
 
+    for (let i = 0; i < 4; i++) {
+      this.starList.push(this.stars.create(0, 0, "star", 0, false, false));
+    }
+
     this.time.addEvent({
       delay: 5000,
       timeScale: 1.0,
       repeat: 3,
-      callback: () => this.createStar(this.stars),
+      callback: () => this.activeStar(this.starList),
     });
 
     /*
@@ -146,17 +154,22 @@ export class Game extends Phaser.Scene {
     }
   }
 
-  createStar(stars: DynamicGroup): void {
+  activeStar(starList: DynamicBody[]): void {
     // 右端か左端から登場させる
     const leftOrRight = Phaser.Math.Between(0, 1)
       ? 0
       : Number(this.game.config.width);
-    const star: DynamicBody = stars.create(leftOrRight, 0, "star");
 
-    // 星のそれぞれにランダムなバランス値を与える
-    star.setCollideWorldBounds(true);
-    star.setBounce(1, 1);
-    star.setVelocity(Phaser.Math.Between(-200, 200), 20);
+    let count = 0;
+    starList.forEach((star) => {
+      if (!star.active && count === 0) {
+        star.enableBody(true, leftOrRight, 0, true, true);
+        star.setCollideWorldBounds(true);
+        star.setBounce(1, 1);
+        star.setVelocity(Phaser.Math.Between(-200, 200), 20);
+        count++;
+      }
+    });
   }
 
   // 星を取得すると、星が消え得点が入る
@@ -166,12 +179,31 @@ export class Game extends Phaser.Scene {
     this.score += 10;
     this.scoreText.setText("Score: " + this.score);
 
+    const delay = Phaser.Math.Between(3000, 5000);
+
+    this.time.addEvent({
+      delay,
+      timeScale: 1.0,
+      callback: () => this.activeStar(this.starList),
+    });
+
+    // 30点ごとに敵を1体追加
+    if (this.score % 30 === 0) {
+      this.time.addEvent({
+        delay,
+        timeScale: 1.0,
+        callback: () => this.createBomb(player, this.bombs),
+      });
+    }
+  }
+
+  createBomb(player: Player, bombs: DynamicGroup) {
     const x =
       player.x < 400
         ? Phaser.Math.Between(400, 800)
         : Phaser.Math.Between(0, 400);
 
-    const bomb = this.bombs.create(x, 16, "bomb");
+    const bomb = bombs.create(x, 16, "bomb");
     bomb.setBounce(1);
     bomb.setCollideWorldBounds(true);
     bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
