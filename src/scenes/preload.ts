@@ -23,7 +23,9 @@ export class Preload extends Phaser.Scene {
 
     this.startText.setOrigin(0.5);
 
-    this.startText.setInteractive();
+    this.startText.setInteractive({
+      useHandCursor: true,
+    });
     this.startText.on("pointerdown", () => {
       this.scene.start("game");
     });
